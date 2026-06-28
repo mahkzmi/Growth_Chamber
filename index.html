@@ -87,7 +87,7 @@
         // ============================================================
         const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSuAvM-o8psH-hBcS2ksuOayG-ab5EuEVmx7NtnkpzVsAxNdWyP9blSkMq3GgbybcSiIeCthFs2o_TJ/pub?output=csv";
         const ESP_IP = "10.231.21.239";
-
+        
         // ============================================================
         //  DOM References
         // ============================================================
@@ -121,8 +121,6 @@
                 }
                 const lastLine = lines[lines.length - 1];
                 const columns = lastLine.split(',');
-
-                // ستون‌ها: Timestamp, Soil1, Soil2, Soil3, Gas, Light, Temp, Hum, Pump, Humidifier
                 if (columns.length >= 10) {
                     const data = {
                         soil1: parseInt(columns[1]) || 0,
@@ -174,7 +172,7 @@
         }
 
         // ============================================================
-        //  کنترل از راه دور - ارسال فرمان به ESP
+        //  کنترل از راه دور - استفاده از پروکسی CORS
         // ============================================================
         async function sendCommand(device) {
             const toggle = device === 'H' ? toggleH : toggleP;
@@ -182,14 +180,16 @@
             const newState = !currentState;
             const stateStr = newState ? 'ON' : 'OFF';
 
-            // تغییر ظاهری دکمه
             toggle.className = newState ? 'toggle active' : 'toggle';
             cmdFeedback.textContent = `⏳ در حال ارسال ${device === 'H' ? 'بخارساز' : 'پمپ'} → ${stateStr} ...`;
             cmdFeedback.className = 'cmd-feedback';
 
             try {
-                // ارسال درخواست به ESP
-                const response = await fetch(`http://${ESP_IP}/cmd?device=${device}&state=${stateStr}`);
+                // استفاده از پروکسی رایگان CORS-Anywhere
+                const proxyUrl = 'https://api.allorigins.win/raw?url=';
+                const targetUrl = `http://${ESP_IP}/cmd?device=${device}&state=${stateStr}`;
+                const response = await fetch(proxyUrl + encodeURIComponent(targetUrl));
+                
                 if (response.ok) {
                     cmdFeedback.textContent = `✅ ${device === 'H' ? 'بخارساز' : 'پمپ'} → ${stateStr} (موفق)`;
                     cmdFeedback.className = 'cmd-feedback success';
@@ -200,7 +200,6 @@
                 console.error('Command error:', error);
                 cmdFeedback.textContent = `❌ خطا در ارسال فرمان (ESP در دسترس نیست)`;
                 cmdFeedback.className = 'cmd-feedback error';
-                // بازگرداندن وضعیت دکمه
                 toggle.className = currentState ? 'toggle active' : 'toggle';
             }
 
