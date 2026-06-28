@@ -45,53 +45,48 @@
             <h1>🌱 Smart Growth Chamber</h1>
             <div id="statusBadge" class="status-badge online">
                 <span class="dot"></span>
-                <span id="statusText">🟢 در حال دریافت...</span>
+                <span id="statusText">در حال دریافت...</span>
             </div>
-            <div class="last-update" id="lastUpdate">⏱️ آخرین بروزرسانی: --</div>
+            <div class="last-update" id="lastUpdate">آخرین بروزرسانی: --</div>
         </div>
         <div class="grid">
             <div class="card">
-                <div class="card-title">🪴 رطوبت خاک</div>
-                <div class="sensor-item"><span class="sensor-label">گلدان ۱</span><span class="sensor-value" id="soil1">--%</span></div>
-                <div class="sensor-item"><span class="sensor-label">گلدان ۲</span><span class="sensor-value" id="soil2">--%</span></div>
-                <div class="sensor-item"><span class="sensor-label">گلدان ۳</span><span class="sensor-value" id="soil3">--%</span></div>
+                <div class="card-title">رطوبت خاک</div>
+                <div class="sensor-item"><span class="sensor-label">گلدان 1</span><span class="sensor-value" id="soil1">--%</span></div>
+                <div class="sensor-item"><span class="sensor-label">گلدان 2</span><span class="sensor-value" id="soil2">--%</span></div>
+                <div class="sensor-item"><span class="sensor-label">گلدان 3</span><span class="sensor-value" id="soil3">--%</span></div>
             </div>
             <div class="card">
-                <div class="card-title">🌤️ محیط</div>
-                <div class="sensor-item"><span class="sensor-label">🌡️ دما</span><span class="sensor-value" id="temp">-- °C</span></div>
-                <div class="sensor-item"><span class="sensor-label">💧 رطوبت</span><span class="sensor-value" id="hum">-- %</span></div>
-                <div class="sensor-item"><span class="sensor-label">☀️ نور</span><span class="sensor-value" id="light">-- lx</span></div>
-                <div class="sensor-item"><span class="sensor-label">🛡️ گاز</span><span class="sensor-value green" id="gas">✅ عادی</span></div>
+                <div class="card-title">محیط</div>
+                <div class="sensor-item"><span class="sensor-label">دما</span><span class="sensor-value" id="temp">-- °C</span></div>
+                <div class="sensor-item"><span class="sensor-label">رطوبت</span><span class="sensor-value" id="hum">-- %</span></div>
+                <div class="sensor-item"><span class="sensor-label">نور</span><span class="sensor-value" id="light">-- lx</span></div>
+                <div class="sensor-item"><span class="sensor-label">گاز</span><span class="sensor-value green" id="gas">عادی</span></div>
             </div>
             <div class="card">
-                <div class="card-title">🎛️ کنترل</div>
+                <div class="card-title">کنترل</div>
                 <div class="toggle-wrap">
-                    <span>💨 بخارساز</span>
+                    <span>بخارساز</span>
                     <div class="toggle" id="toggleH" onclick="sendCommand('H')"></div>
                 </div>
                 <div class="toggle-wrap">
-                    <span>💧 پمپ آب</span>
+                    <span>پمپ آب</span>
                     <div class="toggle" id="toggleP" onclick="sendCommand('P')"></div>
                 </div>
-                <div class="cmd-feedback" id="cmdFeedback">🔄 آماده</div>
+                <div class="cmd-feedback" id="cmdFeedback">آماده</div>
             </div>
         </div>
         <div class="footer">
-            📊 <a href="#" id="sheetLink" target="_blank">Google Sheets</a> · 
-            دانشگاه تهران
+            <a href="#" id="sheetLink" target="_blank">Google Sheets</a> - دانشگاه تهران
         </div>
     </div>
 
     <script>
-        // ============================================================
-        //  تنظیمات - فقط این بخش را در صورت نیاز تغییر دهید
-        // ============================================================
+        // تنظیمات
         const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSuAvM-o8psH-hBcS2ksuOayG-ab5EuEVmx7NtnkpzVsAxNdWyP9blSkMq3GgbybcSiIeCthFs2o_TJ/pub?output=csv";
-        const ESP_IP = "10.231.21.239";  // IP ESP8266 در شبکه دانشگاه
-        
-        // ============================================================
-        //  DOM References
-        // ============================================================
+        const ESP_IP = "10.231.21.239";
+
+        // DOM
         const soilEls = [
             document.getElementById('soil1'),
             document.getElementById('soil2'),
@@ -108,26 +103,18 @@
         const toggleP = document.getElementById('toggleP');
         const sheetLink = document.getElementById('sheetLink');
 
-        // ============================================================
-        //  دریافت داده از Google Sheets (CSV)
-        // ============================================================
+        // دریافت داده
         async function fetchData() {
             try {
                 const response = await fetch(SHEET_CSV_URL);
                 const csvText = await response.text();
-                
-                // تبدیل CSV به آرایه
                 const lines = csvText.split('\n').filter(line => line.trim() !== '');
                 if (lines.length < 2) {
-                    statusText.textContent = '🟡 در انتظار داده جدید';
+                    statusText.textContent = 'در انتظار داده جدید';
                     return;
                 }
-                
-                // آخرین ردیف داده (ردیف آخر)
                 const lastLine = lines[lines.length - 1];
                 const columns = lastLine.split(',');
-                
-                // ستون‌ها: Timestamp, Soil1, Soil2, Soil3, Gas, Light, Temp, Hum, Pump, Humidifier
                 if (columns.length >= 10) {
                     const data = {
                         soil1: parseInt(columns[1]) || 0,
@@ -140,20 +127,16 @@
                         pump: columns[8] || "OFF",
                         humidifier: columns[9] || "OFF"
                     };
-                    
                     updateUI(data);
-                    statusText.textContent = '🟢 آنلاین';
+                    statusText.textContent = 'آنلاین';
                 }
-                
             } catch (error) {
-                console.error('❌ Error:', error);
-                statusText.textContent = '🔴 خطا در دریافت';
+                console.error('Error:', error);
+                statusText.textContent = 'خطا در دریافت';
             }
         }
 
-        // ============================================================
-        //  بروزرسانی UI
-        // ============================================================
+        // بروزرسانی UI
         function updateUI(data) {
             if (data.soil1 !== undefined) soilEls[0].textContent = data.soil1 + '%';
             if (data.soil2 !== undefined) soilEls[1].textContent = data.soil2 + '%';
@@ -161,70 +144,58 @@
             if (data.temp !== undefined) tempEl.textContent = data.temp + ' °C';
             if (data.hum !== undefined) humEl.textContent = data.hum + ' %';
             if (data.light !== undefined) lightEl.textContent = data.light + ' lx';
-            
             if (data.gas !== undefined) {
                 if (data.gas == 100) {
-                    gasEl.textContent = '⚠️ شناسایی!';
+                    gasEl.textContent = 'شناسایی!';
                     gasEl.className = 'sensor-value red';
                 } else {
-                    gasEl.textContent = '✅ عادی';
+                    gasEl.textContent = 'عادی';
                     gasEl.className = 'sensor-value green';
                 }
             }
-            
             if (data.humidifier !== undefined) {
                 toggleH.className = data.humidifier === 'ON' ? 'toggle active' : 'toggle';
             }
             if (data.pump !== undefined) {
                 toggleP.className = data.pump === 'ON' ? 'toggle active' : 'toggle';
             }
-            
             const now = new Date();
-            lastUpdateEl.textContent = '⏱️ ' + now.toLocaleTimeString('fa-IR');
+            lastUpdateEl.textContent = 'آخرین بروزرسانی: ' + now.toLocaleTimeString('fa-IR');
         }
 
-        // ============================================================
-        //  کنترل از راه دور (ارسال فرمان به ESP)
-        // ============================================================
+        // ارسال فرمان
         async function sendCommand(device) {
             const toggle = device === 'H' ? toggleH : toggleP;
             const currentState = toggle.classList.contains('active');
             const newState = !currentState;
             const stateStr = newState ? 'ON' : 'OFF';
-
             toggle.className = newState ? 'toggle active' : 'toggle';
-            cmdFeedback.textContent = `⏳ در حال ارسال ${device === 'H' ? 'بخارساز' : 'پمپ'} → ${stateStr} ...`;
+            cmdFeedback.textContent = 'در حال ارسال ' + (device === 'H' ? 'بخارساز' : 'پمپ') + ' -> ' + stateStr + ' ...';
             cmdFeedback.className = 'cmd-feedback';
-
             try {
-                const response = await fetch(`http://${ESP_IP}/cmd?device=${device}&state=${stateStr}`);
+                const response = await fetch('http://' + ESP_IP + '/cmd?device=' + device + '&state=' + stateStr);
                 if (response.ok) {
-                    cmdFeedback.textContent = `✅ ${device === 'H' ? 'بخارساز' : 'پمپ'} → ${stateStr} (موفق)`;
+                    cmdFeedback.textContent = (device === 'H' ? 'بخارساز' : 'پمپ') + ' -> ' + stateStr + ' (موفق)';
                     cmdFeedback.className = 'cmd-feedback success';
                 } else {
-                    throw new Error(`HTTP ${response.status}`);
+                    throw new Error('HTTP ' + response.status);
                 }
             } catch (error) {
-                console.error('❌ Command error:', error);
-                cmdFeedback.textContent = `❌ خطا در ارسال فرمان (ESP در دسترس نیست)`;
+                console.error('Command error:', error);
+                cmdFeedback.textContent = 'خطا در ارسال فرمان (ESP در دسترس نیست)';
                 cmdFeedback.className = 'cmd-feedback error';
                 toggle.className = currentState ? 'toggle active' : 'toggle';
             }
-
-            setTimeout(() => {
-                cmdFeedback.textContent = '🔄 آماده';
+            setTimeout(function() {
+                cmdFeedback.textContent = 'آماده';
                 cmdFeedback.className = 'cmd-feedback';
             }, 3000);
         }
 
-        // ============================================================
-        //  شروع
-        // ============================================================
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('🌱 Dashboard Ready');
-            console.log(`📡 ESP IP: ${ESP_IP}`);
+        // شروع
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Dashboard Ready');
             sheetLink.href = SHEET_CSV_URL;
-            
             fetchData();
             setInterval(fetchData, 5000);
         });
