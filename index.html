@@ -80,7 +80,6 @@
 
     <script>
         // ===== تنظیمات =====
-        // ⚠️ این URL رو عوض نکنید - از همان URL اسکریپت خودتون استفاده میکنه
         const SHEET_URL = "https://script.google.com/macros/s/AKfycbyQ-hNtETQUxw32GSsWsgjnMMmEWX2ZaZgbQ0-I2xDdxm66z15fCpKT4hWWpbKrEUoQ/exec";
 
         // ===== DOM =====
@@ -105,23 +104,36 @@
                 const response = await fetch(`${SHEET_URL}?last=1`);
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 
-                const data = await response.json();
-                console.log('📥 Data:', data);
+                const text = await response.text();
+                console.log('📥 Raw response:', text);
                 
-                if (data && data.length > 0) {
-                    const row = data[0];
-                    updateUI({
-                        soil1: parseInt(row[1]) || 0,
-                        soil2: parseInt(row[2]) || 0,
-                        soil3: parseInt(row[3]) || 0,
-                        gas: parseInt(row[4]) || 0,
-                        light: parseFloat(row[5]) || 0,
-                        temp: parseFloat(row[6]) || 0,
-                        hum: parseFloat(row[7]) || 0,
-                        pump: row[8] || "OFF",
-                        humidifier: row[9] || "OFF"
-                    });
-                    statusText.textContent = '🟢 آنلاین';
+                // اگر پاسخ "OK" بود، یعنی داده جدیدی نیست
+                if (text === 'OK') {
+                    console.log('ℹ️ No new data');
+                    statusText.textContent = '🟢 در انتظار داده جدید';
+                    return;
+                }
+                
+                // اگر پاسخ JSON بود، پردازش کن
+                try {
+                    const data = JSON.parse(text);
+                    if (data && data.length > 0) {
+                        const row = data[0];
+                        updateUI({
+                            soil1: parseInt(row[1]) || 0,
+                            soil2: parseInt(row[2]) || 0,
+                            soil3: parseInt(row[3]) || 0,
+                            gas: parseInt(row[4]) || 0,
+                            light: parseFloat(row[5]) || 0,
+                            temp: parseFloat(row[6]) || 0,
+                            hum: parseFloat(row[7]) || 0,
+                            pump: row[8] || "OFF",
+                            humidifier: row[9] || "OFF"
+                        });
+                        statusText.textContent = '🟢 آنلاین';
+                    }
+                } catch (jsonError) {
+                    console.warn('⚠️ Not JSON, ignoring:', text);
                 }
             } catch (error) {
                 console.error('❌ Error:', error);
