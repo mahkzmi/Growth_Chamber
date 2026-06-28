@@ -236,8 +236,8 @@
 
     <script>
         // ===== تنظیمات MQTT =====
-        // ✅ پورت به 8883 تغییر کرد
-        const MQTT_BROKER = "wss://db98a2e1a45347e99911aeeb88a89068.s1.eu.hivemq.cloud:8883/mqtt";
+        // ✅ استفاده از پورت 443 (HTTPS) - کاملاً استاندارد
+        const MQTT_BROKER = "wss://db98a2e1a45347e99911aeeb88a89068.s1.eu.hivemq.cloud:443/mqtt";
         const MQTT_USER = "esp8266_growth";
         const MQTT_PASS = "TehranUni1404";
         const TOPIC_DATA = "growth_chamber/data";
@@ -280,11 +280,19 @@
             statusText.textContent = '🔴 قطع';
         });
 
+        client.on('error', (err) => {
+            console.error('❌ MQTT Error:', err);
+            statusBadge.className = 'status-badge offline';
+            statusText.textContent = '⚠️ خطا: ' + err.message;
+        });
+
         client.on('message', (topic, message) => {
             try {
                 const data = JSON.parse(message.toString());
                 updateUI(data);
-            } catch (e) {}
+            } catch (e) {
+                console.warn('Invalid JSON:', message.toString());
+            }
         });
 
         function updateUI(data) {
@@ -327,6 +335,7 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             console.log('🌱 Dashboard Ready');
+            console.log('🔗 MQTT Broker:', MQTT_BROKER);
         });
     </script>
 </body>
