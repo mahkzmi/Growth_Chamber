@@ -236,7 +236,7 @@
 
     <script>
         // ===== تنظیمات MQTT =====
-        // ✅ استفاده از پورت 443 (HTTPS) - کاملاً استاندارد
+        // ✅ استفاده از پورت 443 (پورت استاندارد HTTPS)
         const MQTT_BROKER = "wss://db98a2e1a45347e99911aeeb88a89068.s1.eu.hivemq.cloud:443/mqtt";
         const MQTT_USER = "esp8266_growth";
         const MQTT_PASS = "TehranUni1404";
@@ -260,22 +260,33 @@
         const toggleH = document.getElementById('toggleH');
         const toggleP = document.getElementById('toggleP');
 
+        console.log('🌱 Dashboard Loading...');
+        console.log('🔗 Connecting to:', MQTT_BROKER);
+
         // ===== MQTT Client =====
         const client = mqtt.connect(MQTT_BROKER, {
             username: MQTT_USER,
             password: MQTT_PASS,
             clean: true,
-            connectTimeout: 6000,
-            reconnectPeriod: 3000,
+            connectTimeout: 10000,
+            reconnectPeriod: 5000,
         });
 
         client.on('connect', () => {
+            console.log('✅ MQTT Connected!');
             statusBadge.className = 'status-badge online';
             statusText.textContent = '🟢 متصل';
-            client.subscribe(TOPIC_DATA);
+            client.subscribe(TOPIC_DATA, (err) => {
+                if (err) {
+                    console.error('❌ Subscribe error:', err);
+                } else {
+                    console.log('📡 Subscribed to:', TOPIC_DATA);
+                }
+            });
         });
 
         client.on('offline', () => {
+            console.warn('⚠️ MQTT Offline');
             statusBadge.className = 'status-badge offline';
             statusText.textContent = '🔴 قطع';
         });
@@ -289,6 +300,7 @@
         client.on('message', (topic, message) => {
             try {
                 const data = JSON.parse(message.toString());
+                console.log('📥 Data received:', data);
                 updateUI(data);
             } catch (e) {
                 console.warn('Invalid JSON:', message.toString());
@@ -335,7 +347,6 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             console.log('🌱 Dashboard Ready');
-            console.log('🔗 MQTT Broker:', MQTT_BROKER);
         });
     </script>
 </body>
