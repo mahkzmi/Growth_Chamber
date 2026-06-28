@@ -37,7 +37,6 @@
         .footer { text-align: center; padding: 20px; color: #5a6a7a; font-size: 0.8rem; border-top: 1px solid rgba(255,255,255,0.05); }
         .footer a { color: #6dd5ed; text-decoration: none; }
         @media (max-width: 600px) { .header h1 { font-size: 1.6rem; } .grid { grid-template-columns: 1fr; } }
-        .loading { opacity: 0.6; pointer-events: none; }
     </style>
 </head>
 <body>
@@ -87,7 +86,9 @@
         // ============================================================
         //  تنظیمات - ⚠️ فقط این بخش را در صورت نیاز تغییر دهید
         // ============================================================
-        const SHEET_URL = "https://script.google.com/macros/s/AKfycbyQ-hNtETQUxw32GSsWsgjnMMmEWX2ZaZgbQ0-I2xDdxm66z15fCpKT4hWWpbKrEUoQ/exec";
+        // این URL را از Google Sheets خود بگیرید:
+        // File → Share → Publish to web → CSV
+        const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSuAvM-o8psH-hBcS2ksuOayG-ab5EuEVmx7NtnkpzVsAxNdWyP9blSkMq3GgbybcSiIeCthFs2o_TJ/pub?output=csv";
         const ESP_IP = "10.231.21.239";  // IP ESP8266 در شبکه دانشگاه
         
         // ============================================================
@@ -110,41 +111,41 @@
         const sheetLink = document.getElementById('sheetLink');
 
         // ============================================================
-        //  دریافت داده از Google Sheets
+        //  دریافت داده از Google Sheets (CSV)
         // ============================================================
         async function fetchData() {
             try {
-                const response = await fetch(`${SHEET_URL}?last=1`);
-                const text = await response.text();
+                const response = await fetch(SHEET_CSV_URL);
+                const csvText = await response.text();
                 
-                if (text === 'OK' || text.includes('Error')) {
+                // تبدیل CSV به آرایه
+                const lines = csvText.split('\n').filter(line => line.trim() !== '');
+                if (lines.length < 2) {
                     statusText.textContent = '🟡 در انتظار داده جدید';
                     return;
                 }
                 
-                try {
-                    const data = JSON.parse(text);
-                    if (data && data.length > 0) {
-                        const row = data[0];
-                        updateUI({
-                            soil1: parseInt(row[1]) || 0,
-                            soil2: parseInt(row[2]) || 0,
-                            soil3: parseInt(row[3]) || 0,
-                            gas: parseInt(row[4]) || 0,
-                            light: parseFloat(row[5]) || 0,
-                            temp: parseFloat(row[6]) || 0,
-                            hum: parseFloat(row[7]) || 0,
-                            pump: row[8] || "OFF",
-                            humidifier: row[9] || "OFF"
-                        });
-                        statusText.textContent = '🟢 آنلاین';
-                        return;
-                    }
-                } catch (e) {
-                    console.log('📥 Waiting for data...');
-                }
+                // آخرین ردیف داده (ردیف آخر)
+                const lastLine = lines[lines.length - 1];
+                const columns = lastLine.split(',');
                 
-                statusText.textContent = '🟡 در انتظار داده جدید';
+                // ستون‌ها: Timestamp, Soil1, Soil2, Soil3, Gas, Light, Temp, Hum, Pump, Humidifier
+                if (columns.length >= 10) {
+                    const data = {
+                        soil1: parseInt(columns[1]) || 0,
+                        soil2: parseInt(columns[2]) || 0,
+                        soil3: parseInt(columns[3]) || 0,
+                        gas: parseInt(columns[4]) || 0,
+                        light: parseFloat(columns[5]) || 0,
+                        temp: parseFloat(columns[6]) || 0,
+                        hum: parseFloat(columns[7]) || 0,
+                        pump: columns[8] || "OFF",
+                        humidifier: columns[9] || "OFF"
+                    };
+                    
+                    updateUI(data);
+                    statusText.textContent = '🟢 آنلاین';
+                }
                 
             } catch (error) {
                 console.error('❌ Error:', error);
@@ -193,13 +194,11 @@
             const newState = !currentState;
             const stateStr = newState ? 'ON' : 'OFF';
 
-            // تغییر ظاهری (Optimistic)
             toggle.className = newState ? 'toggle active' : 'toggle';
             cmdFeedback.textContent = `⏳ در حال ارسال ${device === 'H' ? 'بخارساز' : 'پمپ'} → ${stateStr} ...`;
             cmdFeedback.className = 'cmd-feedback';
 
             try {
-                // ارسال فرمان به ESP
                 const response = await fetch(`http://${ESP_IP}/cmd?device=${device}&state=${stateStr}`);
                 if (response.ok) {
                     cmdFeedback.textContent = `✅ ${device === 'H' ? 'بخارساز' : 'پمپ'} → ${stateStr} (موفق)`;
@@ -211,7 +210,6 @@
                 console.error('❌ Command error:', error);
                 cmdFeedback.textContent = `❌ خطا در ارسال فرمان (ESP در دسترس نیست)`;
                 cmdFeedback.className = 'cmd-feedback error';
-                // بازگرداندن وضعیت
                 toggle.className = currentState ? 'toggle active' : 'toggle';
             }
 
@@ -227,7 +225,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             console.log('🌱 Dashboard Ready');
             console.log(`📡 ESP IP: ${ESP_IP}`);
-            sheetLink.href = SHEET_URL;
+            sheetLink.href = SHEET_CSV_URL;
             
             fetchData();
             setInterval(fetchData, 5000);
